@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #chat-box { width: 300px; height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: auto; }
+        #message-input { width: 80%; }
+        #send-button { width: 18%; }
+        .message { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Chat</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="message-input" placeholder="Type a message...">
+    <button id="send-button">Send</button>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const gistId = 'dbfa439c5d2e1fb9b1b44edbb0120dd0'; // Your Gist ID
+        const gistUrl = `https://api.github.com/gists/${gistId}`;
+        const githubToken = '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'; // Your GitHub token
+
+        function updateChat(messages) {
+            chatBox.innerHTML = ''; // Clear chat box
+            messages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.textContent = msg;
+                chatBox.appendChild(messageElement);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+        }
+
+        function fetchMessages() {
+            fetch(gistUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const content = data.files['messages.json'].content;
+                    const messages = JSON.parse(content);
+                    updateChat(messages);
+                });
+        }
+
+        function sendMessage(message) {
+            fetch(gistUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `token ${githubToken}`
+                },
+                body: JSON.stringify({
+                    files: {
+                        'messages.json': {
+                            content: JSON.stringify([...JSON.parse(document.querySelector('#chat-box').innerText || '[]'), message])
+                        }
+                    }
+                })
+            }).then(() => {
+                fetchMessages(); // Refresh chat
+            });
+        }
+
+        sendButton.addEventListener('click', () => {
+            const messageText = messageInput.value.trim();
+            if (messageText) {
+                sendMessage(messageText);
+                messageInput.value = '';
+            }
+        });
+
+        // Fetch messages on page load and periodically
+        fetchMessages();
+        setInterval(fetchMessages, 5000); // Refresh every 5 seconds
+    </script>
+</body>
+</html>
